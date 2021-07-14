@@ -19,8 +19,12 @@ class _homePageState extends State<homePage> {
   RTCVideoRenderer _localRendered = RTCVideoRenderer();
   Signaling _signaling = Signaling();
 
+  String ?_me ;
+  late String _userName = '';
+
   @override
   void initState() {
+    print("Me  $_me");
     super.initState();
     _localRendered.initialize();
 
@@ -29,6 +33,13 @@ class _homePageState extends State<homePage> {
     _signaling.onlocalStream=(MediaStream stream) {
       _localRendered.srcObject=stream;;
       _localRendered.mirror = true;
+    };
+    _signaling.onJoined = (bool isOk){
+      if (isOk) {
+        setState(() {
+          _me=_userName;
+        });
+      }
     };
 
   }
@@ -47,7 +58,34 @@ class _homePageState extends State<homePage> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        child: Stack(
+        child: _me == null
+        ? Padding(
+          padding: EdgeInsets.all(30),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              CupertinoTextField(
+                placeholder: 'Ingrese Su Nombre',
+                textAlign: TextAlign.center,
+                onChanged: ( text ) => _userName = text
+              ),
+              SizedBox(height: 20),
+              CupertinoButton(
+                child: Text("JOIN"),
+                color: Colors.blue,
+                onPressed: () {
+                  //join es el evento que permite hacer la solicitud al server para unirse
+                  //a la video llamada
+                  if (_userName.trim().length == 0) {
+                    return;
+                  }
+                  _signaling.emit('join', _userName);
+                })
+            ],
+        ),
+      ) 
+        :  Stack(
           children: <Widget>[
             Positioned(
             left: 20,
@@ -65,7 +103,7 @@ class _homePageState extends State<homePage> {
             ),)
             )
           ],
-        ),
+        ) ,
       )
     );
   }
