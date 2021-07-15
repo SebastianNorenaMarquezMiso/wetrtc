@@ -17,6 +17,8 @@ class homePage extends StatefulWidget {
 class _homePageState extends State<homePage> {
 
   RTCVideoRenderer _localRendered = RTCVideoRenderer();
+  //mostrar a la otra persona
+  RTCVideoRenderer _remoteRendered = RTCVideoRenderer();
   Signaling _signaling = Signaling();
 
   String ?_me ;
@@ -27,12 +29,19 @@ class _homePageState extends State<homePage> {
     print("Me  $_me");
     super.initState();
     _localRendered.initialize();
+    _remoteRendered.initialize();
 
     _signaling.init();
     
+    //mi información de la llamada
     _signaling.onlocalStream=(MediaStream stream) {
       _localRendered.srcObject=stream;;
       _localRendered.mirror = true;
+    };
+    //información de la otra persona al otro lado de la llamada para verlo
+    _signaling.onRemoteStream = (MediaStream remoteStream) {
+      _remoteRendered.srcObject = remoteStream;
+      _remoteRendered.mirror = true;
     };
     _signaling.onJoined = (bool isOk){
       if (isOk) {
@@ -48,7 +57,32 @@ class _homePageState extends State<homePage> {
   void dispose() {
     _signaling.dispose();
     _localRendered.dispose();
+    _remoteRendered.dispose();
     super.dispose();
+  }
+
+
+
+  _inputCall(){
+    var username = '';
+    showCupertinoDialog(context: context, builder: (context) {
+      return CupertinoAlertDialog(
+        content: CupertinoTextField(
+          placeholder: "Call To",
+          onChanged: (text) => username = text
+        ),
+        actions: <Widget>[
+          CupertinoDialogAction(
+            onPressed: () {
+              _signaling.call(username);
+              Navigator.pop(context);
+            } ,
+            child: Text("CALL"),
+          )
+        ]
+
+      );
+    });
   }
 
 
@@ -87,6 +121,10 @@ class _homePageState extends State<homePage> {
       ) 
         :  Stack(
           children: <Widget>[
+            Positioned.fill(
+              child: RTCVideoView(_remoteRendered)
+
+              ),
             Positioned(
             left: 20,
             bottom: 40,
@@ -101,7 +139,25 @@ class _homePageState extends State<homePage> {
                 color: Colors.black12,
                 child: RTCVideoView(_localRendered),),
             ),)
-            )
+            ),
+          Positioned(
+            right: 20,
+            bottom: 40,
+            child: CupertinoButton(
+                child: Text ('Llamar'),
+                onPressed: (){
+                  /**
+                   al dar click en esten botón se abrirá una ventana
+                   para ingresar el nombre de la persona que va a llamar
+                   */
+                  _inputCall();
+                },
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                color: Colors.green
+
+              )
+              )
+
           ],
         ) ,
       )
