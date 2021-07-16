@@ -66,7 +66,8 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
   @override
   Stream<AppState> mapEventToState(AppStateEvent event) async* {
     if (event is ShowPickerEvent) {
-      yield AppState(status: Status.showPicker, heroes: event.heroes, heroSelected: state.heroSelected);
+      yield AppState(status: Status.showPicker, heroes: event.heroes, heroSelected: state.heroSelected,
+      personGoingToCall: state.personGoingToCall);
     } else if (event is PickHeroEvent) {
       //Si entra aquí se elige un personaje para entrar al chat y pasa de nuevo a loading
       _signaling.emitServer('pick', event.heroName);
@@ -87,6 +88,10 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
         newHeroes[heroTaken.name] = heroTaken;
         print ('heroe newHeroes ${newHeroes[heroTaken.name]}');
         yield state.copyWith(heroes: newHeroes);
+
+    }else if(event is CallingEvent){
+      print('CallingEvent $event');
+      yield state.copyWith(status: Status.calling, personGoingToCall: event.personGoingToCall);
 
     }
 

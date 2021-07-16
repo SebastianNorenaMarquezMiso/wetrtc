@@ -50,3 +50,12 @@ class DisconnectedEvent extends AppStateEvent{
   final String heroNameDesconnected;
   DisconnectedEvent(this.heroNameDesconnected): super([heroNameDesconnected]);
 }
+
+/**
+ * Evento para empezar una llamada
+ * personGoingToCall => persona a la que voy a llamar
+ */
+class CallingEvent extends AppStateEvent{
+  final Hero personGoingToCall;
+  CallingEvent(this.personGoingToCall): super([personGoingToCall]);
+}
