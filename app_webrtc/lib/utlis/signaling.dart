@@ -19,6 +19,7 @@ typedef OnJoined(bool isOk);
 typedef OnConnected (Map<String, Hero> heroes);
 typedef OnAssigned(String heroName);
 typedef OnTaken(String heroName);
+typedef OnDisconnected(String heroNameDisconnected);
 
 class Signaling{
 
@@ -39,6 +40,7 @@ class Signaling{
    late OnConnected onConnected;
    late OnAssigned onAssigned;
    late OnTaken onTaken;
+   late OnDisconnected onDisconnected;
 
 
 
@@ -96,6 +98,13 @@ class Signaling{
        */
       _socket.on('on-taken', (heroName) {
         onTaken(heroName);
+      });
+
+      /**
+       * Detecta cuando un usuario se desconecta
+       */
+      _socket.on('on-disconnected', (heroNameDisconnected) {
+        onDisconnected(heroNameDisconnected);
       });
   }
 

@@ -36,8 +36,17 @@ class ConnectedEvent extends AppStateEvent{
   ConnectedEvent(this.heroSelected): super([heroSelected]);
   
 }
-
+//isTaken es true un superheroe ha sido seleccionado, si está dispoible será false
 class TakeEvent extends AppStateEvent{
   final String heroName;
-  TakeEvent(this.heroName): super([heroName]);
+  final bool isTaken;
+  TakeEvent({required this.heroName, required this.isTaken}): super([heroName, isTaken]);
+}
+
+/**
+ * Clase para detectar cuando un usuario se desconecta
+ */
+class DisconnectedEvent extends AppStateEvent{
+  final String heroNameDesconnected;
+  DisconnectedEvent(this.heroNameDesconnected): super([heroNameDesconnected]);
 }
