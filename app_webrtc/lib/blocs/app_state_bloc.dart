@@ -7,6 +7,7 @@ import 'package:app_webrtc/models/hero.dart';
 import 'package:app_webrtc/utlis/signaling.dart';
 import 'package:bloc/bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_webrtc/webrtc.dart';
 
 class AppStateBloc extends Bloc<AppStateEvent, AppState>{
   @override
@@ -24,7 +25,11 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
   //AppState get initialState => _init();
   
   _init(){
-    _signaling.connectServer();
+    _signaling.initServer();
+    //_signaling.connectServer();
+    _signaling.onlocalStreamVideoCall = (MediaStream streamVideoCall){
+      print('streamVideoCalllllllllllll $streamVideoCall');
+    };
     _signaling.onConnected = (Map<String,Hero>data) {
       if(data != null){
         //print("Connected ${jsonEncode(data)}");
@@ -91,8 +96,8 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
 
     }else if(event is CallingEvent){
       print('CallingEvent $event');
+      _signaling.callTo(event.personGoingToCall.name);
       yield state.copyWith(status: Status.calling, personGoingToCall: event.personGoingToCall);
-
     }
 
   }

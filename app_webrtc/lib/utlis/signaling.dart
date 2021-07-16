@@ -6,6 +6,7 @@ import 'package:flutter_webrtc/media_stream.dart';
 
 //import 'package:socket_io_client/socket_io_client.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import '../utlis/webRTCConfig.dart';
 
 /**
  * Aquí se va a realizar todo el proceso para enviar y recibir 
@@ -20,6 +21,7 @@ typedef OnConnected (Map<String, Hero> heroes);
 typedef OnAssigned(String heroName);
 typedef OnTaken(String heroName);
 typedef OnDisconnected(String heroNameDisconnected);
+typedef OnlocalStreamVideoCall(MediaStream streamVideoCall);
 
 class Signaling{
 
@@ -41,6 +43,11 @@ class Signaling{
    late OnAssigned onAssigned;
    late OnTaken onTaken;
    late OnDisconnected onDisconnected;
+   late RTCPeerConnection _peerConnection;
+   late OnlocalStreamVideoCall onlocalStreamVideoCall;
+   late MediaStream _onlocalStreamVideoCall;
+   //guarda el nombre de la otra persona del otro lado de la llamada
+   late String _person2;
 
 
 
@@ -61,13 +68,23 @@ class Signaling{
     _localStream= stream;
     onlocalStream(stream);
     //_connect();
-    connectServer();
+
     
   }
 
+  //Segundo chat
+  Future<void>initServer() async {
+    _onlocalStreamVideoCall = await navigator.getUserMedia(WebRTCConfig.mediaConstraints);
+    onlocalStreamVideoCall(_onlocalStreamVideoCall);
+    _connectServer();
+  }
+
+/*   Future<void> initChat() async { 
+  } */
+
 
 //Cargamos los perfiles disponibles para hacer la llamada
-  connectServer(){
+  _connectServer(){
       _socket = IO.io('https://backend-super-hero-call.herokuapp.com/',
       IO.OptionBuilder()
       .setTransports(['websocket']) // for Flutter or Dart VM
@@ -112,6 +129,27 @@ class Signaling{
    if(_socket != null) _socket.emit(event,data);
   }
 
+  Future<void> _createPeerServer() async{
+    this._peerConnection =  await createPeerConnection(WebRTCConfig.configuration, {});
+    _peerConnection.addStream(this._onlocalStreamVideoCall);
+    //Se ejecuta cuando obtengo el video de la otra persona que está al otro lado de la llamada
+    _peerConnection.onAddStream = (MediaStream streamVideoCall){
+
+    };
+  }
+
+  /**
+   * Guardamos el nombre de la otra persona que se va a llamar
+   */
+  callTo(String nameCall) async{
+    _usuario2 = nameCall;
+    await _createPeerServer();
+    final RTCSessionDescription offerNameCall = await _peerConnection.createOffer(WebRTCConfig.offerSdpConstraints);
+    await _peerConnection.setLocalDescription(offerNameCall);
+    emit('request', {"superHeroName": nameCall, "offer": offerNameCall.toMap()});
+
+
+  }
 
 
 
@@ -203,6 +241,9 @@ class Signaling{
     _socket.disconnect();
     _socket.destroy();
     //_socket = null;
+    _onlocalStreamVideoCall.dispose();
+    _peerConnection.close();
+    _peerConnection.dispose();
   }
 
 /**
