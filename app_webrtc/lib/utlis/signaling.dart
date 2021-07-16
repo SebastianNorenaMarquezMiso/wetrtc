@@ -1,9 +1,10 @@
 
 
+import 'package:app_webrtc/models/hero.dart';
 import 'package:flutter_webrtc/webrtc.dart';
 import 'package:flutter_webrtc/media_stream.dart';
 
-import 'package:socket_io_client/socket_io_client.dart';
+//import 'package:socket_io_client/socket_io_client.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 /**
@@ -13,8 +14,11 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 typedef OnlocalStream (MediaStream stream);
 typedef OnRemoteStream(MediaStream streamRemote);
-
 typedef OnJoined(bool isOk);
+
+typedef OnConnected (Map<String, Hero> heroes);
+typedef OnAssigned(String heroName);
+typedef OnTaken(String heroName);
 
 class Signaling{
 
@@ -30,6 +34,13 @@ class Signaling{
    late String _usuario2;
 
    late MediaStream _localStream;
+
+    //Variables segundo chat
+   late OnConnected onConnected;
+   late OnAssigned onAssigned;
+   late OnTaken onTaken;
+
+
 
   init() async {
     MediaStream stream = await navigator.getUserMedia({
@@ -47,12 +58,67 @@ class Signaling{
 
     _localStream= stream;
     onlocalStream(stream);
-    _connect();
+    //_connect();
+    connectServer();
+    
   }
+
+
+//Cargamos los perfiles disponibles para hacer la llamada
+  connectServer(){
+      _socket = IO.io('https://backend-super-hero-call.herokuapp.com/',
+      IO.OptionBuilder()
+      .setTransports(['websocket']) // for Flutter or Dart VM
+      .setExtraHeaders({'foo': 'bar'}) // optional
+      .build());
+
+      print('por aquí pasé');
+      _socket.on("on-connected", (data) {
+        final tmp = Map.from(data);
+         print('temporal $tmp');
+         final Map<String, Hero> heroes = tmp.map((key, value) {
+           //print('value $value');
+           final Hero heroe = Hero.fromJson(value);
+           ///print('hero $heroe');
+           return MapEntry<String, Hero>(key, heroe);
+         });
+        onConnected(heroes);
+      });
+
+      //Se asigna el héroe seleccionado desde nuestra app para entrar al chat
+      _socket.on('on-assigned', (heroName) {
+        onAssigned(heroName);
+      });
+
+      /**
+       * Cuando se selecciona un héroe por el otro usuario, debemos obtener 
+       * ese nombre para seleccionarlo en nuestra interfaz 
+       */
+      _socket.on('on-taken', (heroName) {
+        onTaken(heroName);
+      });
+  }
+
+  emitServer(String event, dynamic data){
+   if(_socket != null) _socket.emit(event,data);
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   _connect(){
   _socket = IO.io('https://backend-simple-webrtc.herokuapp.com/',
-  OptionBuilder()
+  IO.OptionBuilder()
       .setTransports(['websocket']) // for Flutter or Dart VM
       .setExtraHeaders({'foo': 'bar'}) // optional
       .build());
@@ -121,8 +187,13 @@ class Signaling{
     });
   }
 
+  /**
+   * Cuando la aplicación no está en ejecución, se liberan los recurosos
+  */
   dispose(){
     _socket.disconnect();
+    _socket.destroy();
+    //_socket = null;
   }
 
 /**
