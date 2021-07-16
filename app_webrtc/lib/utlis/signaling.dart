@@ -22,6 +22,7 @@ typedef OnAssigned(String heroName);
 typedef OnTaken(String heroName);
 typedef OnDisconnected(String heroNameDisconnected);
 typedef OnlocalStreamVideoCall(MediaStream streamVideoCall);
+typedef OnResponse(dynamic answer);
 
 class Signaling{
 
@@ -48,6 +49,7 @@ class Signaling{
    late MediaStream _onlocalStreamVideoCall;
    //guarda el nombre de la otra persona del otro lado de la llamada
    late String _person2;
+   late OnResponse onResponse;
 
 
 
@@ -123,6 +125,21 @@ class Signaling{
       _socket.on('on-disconnected', (heroNameDisconnected) {
         onDisconnected(heroNameDisconnected);
       });
+
+      /**
+       * Si la solicitud de llamada dura más de 10 segundos,
+       * la respuesta será null y se cuelga la llamada
+       */
+      _socket.on('on-response', (answer) {
+        print("respuesta de la llamada ${answer}");
+        if (answer == null) {
+          _person2 = "";
+          _peerConnection.close();
+          //_peerConnection = null;
+        }
+        onResponse(answer);
+      });
+
   }
 
   emitServer(String event, dynamic data){

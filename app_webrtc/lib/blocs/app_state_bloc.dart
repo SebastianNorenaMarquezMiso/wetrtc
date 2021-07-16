@@ -28,7 +28,7 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
     _signaling.initServer();
     //_signaling.connectServer();
     _signaling.onlocalStreamVideoCall = (MediaStream streamVideoCall){
-      print('streamVideoCalllllllllllll $streamVideoCall');
+
     };
     _signaling.onConnected = (Map<String,Hero>data) {
       if(data != null){
@@ -38,6 +38,7 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
         //print("No se ejecutó $data");
       }
     };
+
     _signaling.onAssigned = (String heroName){
       if(heroName == null){
         add(ShowPickerEvent(state.heroes));
@@ -54,6 +55,15 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
 
     _signaling.onDisconnected = (String heroName){
       add(TakeEvent(heroName: heroName, isTaken: false));
+    };
+
+    _signaling.onResponse = (dynamic answer){
+      print('respuesta desde app_state_bloc $answer');
+      if (answer != null) {
+        print('debo pasar a la pantalla de llamada');
+      }else{
+        add(ConnectedEvent(state.heroSelected));
+      }
     };
   }
 
@@ -80,7 +90,7 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
       yield state.copyWith(status: Status.loading);
     } else if(event is ConnectedEvent){
       //yield AppState(status: Status.connected, heroes: state.heroes);
-      yield state.copyWith(status: Status.connected, heroSelected: event.heroSelected);
+      yield state.copyWith(status: Status.connected, heroSelected: event.heroSelected,personGoingToCall: null);
     }  else if(event is TakeEvent){
         print('takeevent $event');
         Map<String, Hero> newHeroes = Map();
