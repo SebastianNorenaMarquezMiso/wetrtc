@@ -170,7 +170,10 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
       yield state.copyWith(status: Status.connected, personGoingToCall: null);
     } else if( event is FinishCallEvent){
       _signaling.finishCurrentCall();
-      yield state.copyWith(status: Status.connected, personGoingToCall: null);
+      yield state.copyWith(status: Status.connected, personGoingToCall: null, isFrontCamera: true);
+    } else if( event is SwitchCameraEvent ){
+      _signaling.changeCamara();
+      yield state.copyWith(isFrontCamera: event.isFrontCamera);
     }
 
   }

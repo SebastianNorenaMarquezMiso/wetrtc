@@ -68,8 +68,10 @@ class InCalling extends StatelessWidget {
                       ),
                   FloatingActionButton(
                     heroTag: 'cam',
-                    child: Icon(Icons.camera_front),
-                    onPressed: () {})
+                    child: Icon(state.isFrontCamera? Icons.camera_front : Icons.camera_rear),
+                    onPressed: () {
+                      appStateBlocLocal.add(SwitchCameraEvent(!state.isFrontCamera));
+                    })
                 ],
               )
 

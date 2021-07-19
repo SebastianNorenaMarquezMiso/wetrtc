@@ -86,5 +86,10 @@ class CancelRequestEvent extends AppStateEvent{ }
 
 class FinishCallEvent extends AppStateEvent{ }
 
+class SwitchCameraEvent extends AppStateEvent{
+  final bool isFrontCamera;
+  SwitchCameraEvent(this.isFrontCamera): super([isFrontCamera]);
+ }
+
 
 

@@ -7,23 +7,25 @@ class AppState extends Equatable{
   final Status status;
   final Map<String, Hero> heroes;
   final Hero heroSelected, personGoingToCall;
+  final bool isFrontCamera;
 
   //AppState({this.status = Status.loading, this.heroes});
-  AppState( {this.status = Status.loading, required this.heroes, required this.heroSelected, required this.personGoingToCall});
+  AppState( {this.status = Status.loading, required this.heroes, required this.heroSelected, required this.personGoingToCall, this.isFrontCamera=true});
   
   @override
-  List<Object?> get props => [status, heroes, heroSelected, personGoingToCall];
+  List<Object?> get props => [status, heroes, heroSelected, personGoingToCall, isFrontCamera ];
 
   factory AppState.initialState() => AppState(heroes: Map<String, Hero>(),
    heroSelected: Hero(avatar: '',name: '', isTaken: false),
-  personGoingToCall:  Hero(avatar: '',name: '', isTaken: false));
+   personGoingToCall:  Hero(avatar: '',name: '', isTaken: false));
 
-  AppState copyWith({ Status? status, Map<String, Hero>? heroes, Hero? heroSelected, Hero? personGoingToCall }) {
+  AppState copyWith({ Status? status, Map<String, Hero>? heroes, Hero? heroSelected, Hero? personGoingToCall, bool? isFrontCamera }) {
     return AppState(
       status: status ?? this.status,
       heroes: heroes ?? this.heroes,
       heroSelected: heroSelected ?? this.heroSelected,
-      personGoingToCall: personGoingToCall ?? this.personGoingToCall
+      personGoingToCall: personGoingToCall ?? this.personGoingToCall,
+      isFrontCamera: isFrontCamera??this.isFrontCamera
     );
   }
 

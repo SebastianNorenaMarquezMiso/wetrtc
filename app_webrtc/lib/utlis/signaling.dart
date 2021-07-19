@@ -65,6 +65,7 @@ class Signaling{
    late OnFinishCall onFinishCall;
    late OnRemoteStreamVideoCall onRemoteStreamVideoCall;
    IncallManager _incallManager = IncallManager();
+   bool _isFrontCamera =  true;
 
 
 
@@ -227,6 +228,8 @@ class Signaling{
     this._peerConnection.onAddStream = (MediaStream streamVideoCall){
       print("Listos para el streaming $streamVideoCall");
       onRemoteStreamVideoCall(streamVideoCall);
+      _incallManager.start();
+      _incallManager.setForceSpeakerphoneOn(flag: ForceSpeakerType.FORCE_ON);
     };
   }
 
@@ -274,6 +277,9 @@ class Signaling{
   }
 
   _finishCall(){
+    if(!_isFrontCamera){
+      changeCamara();
+    }
     _person2 = "";
     _peerConnection.close();
     _peerConnection = null as RTCPeerConnection;
@@ -285,6 +291,16 @@ class Signaling{
   finishCurrentCall(){
     _finishCall();
     _socket.emit('finish-call');
+  }
+
+
+  //Cambio de cámara
+  changeCamara(){
+    _isFrontCamera = !_isFrontCamera;
+    _onlocalStreamVideoCall.getVideoTracks()[0].switchCamera();
+
+
+
   }
 
 
