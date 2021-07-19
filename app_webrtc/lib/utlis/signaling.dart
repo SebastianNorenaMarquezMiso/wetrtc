@@ -65,7 +65,7 @@ class Signaling{
    late OnFinishCall onFinishCall;
    late OnRemoteStreamVideoCall onRemoteStreamVideoCall;
    IncallManager _incallManager = IncallManager();
-   bool _isFrontCamera =  true;
+   bool _isFrontCamera =  true, _mute=false;
 
 
 
@@ -280,6 +280,9 @@ class Signaling{
     if(!_isFrontCamera){
       changeCamara();
     }
+    if (_mute) {
+      setMicrophoneMute(false);
+    }
     _person2 = "";
     _peerConnection.close();
     _peerConnection = null as RTCPeerConnection;
@@ -294,14 +297,19 @@ class Signaling{
   }
 
 
-  //Cambio de cámara
+  //Cambio de cámara de frontal a trasera y viseversa
   changeCamara(){
     _isFrontCamera = !_isFrontCamera;
     _onlocalStreamVideoCall.getVideoTracks()[0].switchCamera();
-
-
-
   }
+
+  setMicrophoneMute(bool mute){
+    //_onlocalStreamVideoCall.getAudioTracks()[0].setMicrophoneMute(mute);
+    _mute = mute;
+    _onlocalStreamVideoCall.getAudioTracks()[0].enabled = _mute;
+  }
+
+
 
 
 

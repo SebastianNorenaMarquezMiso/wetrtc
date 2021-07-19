@@ -56,8 +56,9 @@ class InCalling extends StatelessWidget {
                 children: <Widget>[
                   FloatingActionButton(
                     heroTag: 'mic',
-                    child: Icon(Icons.mic),
-                    onPressed: () {}
+                    backgroundColor: Colors.blueAccent.withOpacity(state.mute?0.3:1),
+                    child: Icon(!state.mute?Icons.mic_off: Icons.mic),
+                    onPressed: () {appStateBlocLocal.add(MuteEvent(!state.mute));}
                     ),
                     CupertinoButton(
                       color: Colors.redAccent,

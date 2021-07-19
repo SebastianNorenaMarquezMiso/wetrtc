@@ -132,7 +132,7 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
       yield state.copyWith(status: Status.loading);
     } else if(event is ConnectedEvent){
       //yield AppState(status: Status.connected, heroes: state.heroes);
-      yield state.copyWith(status: Status.connected, heroSelected: event.heroSelected,personGoingToCall: null);
+      yield state.copyWith(status: Status.connected, heroSelected: event.heroSelected,personGoingToCall: null, mute: false);
     }  else if(event is TakeEvent){
         print('takeevent $event');
         Map<String, Hero> newHeroes = Map();
@@ -174,6 +174,10 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
     } else if( event is SwitchCameraEvent ){
       _signaling.changeCamara();
       yield state.copyWith(isFrontCamera: event.isFrontCamera);
+    } else if(event is MuteEvent){
+      _signaling.setMicrophoneMute(event.mute);
+      yield state.copyWith(mute: event.mute);
+
     }
 
   }

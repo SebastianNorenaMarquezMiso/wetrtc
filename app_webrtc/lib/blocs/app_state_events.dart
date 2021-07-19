@@ -91,5 +91,11 @@ class SwitchCameraEvent extends AppStateEvent{
   SwitchCameraEvent(this.isFrontCamera): super([isFrontCamera]);
  }
 
+class MuteEvent extends AppStateEvent{
+  final bool mute;
+  MuteEvent(this.mute): super([mute]);
+ }
+
+ 
 
 
