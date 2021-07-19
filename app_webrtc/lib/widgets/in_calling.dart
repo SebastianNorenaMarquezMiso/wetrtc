@@ -14,13 +14,19 @@ class InCalling extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appStateBloc = BlocProvider.of<AppStateBloc>(context);
+    final appStateBlocLocal = BlocProvider.of<AppStateBloc>(context);
     return BlocBuilder<AppStateBloc, AppState> (
       builder: (context, state){
         return Stack(
           children: <Widget>[
             //Video de la persona del otro lado de la llamada
             Positioned.fill(
-              child: RTCVideoView(appStateBloc.remoteRendered),
+              child: Transform.scale(
+                scale: 2,
+                alignment: Alignment.center,
+                child: RTCVideoView(appStateBloc.remoteRendered)
+
+              ),
             ),
             Positioned(
               left: 20,
@@ -36,7 +42,7 @@ class InCalling extends StatelessWidget {
                     height: 640,
                     color: Color(0xffcccccc),
                     //Aqui me veo yo
-                    child: RTCVideoView(appStateBloc.localRendered),
+                    child: RTCVideoView(appStateBlocLocal.localRendered),
                   ),
               ),
               ))

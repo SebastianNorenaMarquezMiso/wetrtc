@@ -9,6 +9,7 @@ import 'package:flutter_webrtc/media_stream.dart';
 //import 'package:socket_io_client/socket_io_client.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../utlis/webRTCConfig.dart';
+import 'package:flutter_incall/flutter_incall.dart';
 
 /**
  * Aquí se va a realizar todo el proceso para enviar y recibir 
@@ -63,6 +64,7 @@ class Signaling{
    late RTCSessionDescription _inCommingOffer;
    late OnFinishCall onFinishCall;
    late OnRemoteStreamVideoCall onRemoteStreamVideoCall;
+   IncallManager _incallManager = IncallManager();
 
 
 
@@ -143,6 +145,7 @@ class Signaling{
        * la respuesta será null y se cuelga la llamada
        */
       _socket.on('on-response', (answer) async {
+        _incallManager.startRingtone(RingtoneUriType.DEFAULT, 'default', 10);
         print("respuesta de la llamada ${answer}");
         if (answer == null) {
           _finishCall();
@@ -166,6 +169,7 @@ class Signaling{
 
     /**Escucha cuando la persona que llamó cuelga */
       _socket.on('on-cancel-request', (_) async {
+        _incallManager.stopRingtone();
         _finishCall();
         onCancelRequest();
       });
@@ -242,6 +246,7 @@ class Signaling{
   * Funciona para aceptar una llamada entrante
   */
   acceptOrDeclineCall(bool accept)async{
+    _incallManager.stopRingtone();
     if (accept) {
       await _createPeerServer();
       // registro la información de la persona que está llamando
@@ -269,10 +274,11 @@ class Signaling{
   }
 
   _finishCall(){
-    //_peerConnection = '' as RTCPeerConnection;
     _person2 = "";
     _peerConnection.close();
+    _peerConnection = null as RTCPeerConnection;
     _requestId = "";
+    _incallManager.stop();
   }
 
 //finaliza la llamada actual
@@ -380,6 +386,7 @@ class Signaling{
     _onlocalStreamVideoCall.dispose();
     _peerConnection.close();
     _peerConnection.dispose();
+    _incallManager.stop();
   }
 
 /**

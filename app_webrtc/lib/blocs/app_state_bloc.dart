@@ -33,6 +33,7 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
   RTCVideoRenderer _remoteRendered = RTCVideoRenderer();
   RTCVideoRenderer get remoteRendered => _remoteRendered;
 
+  
 
 
   
