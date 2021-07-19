@@ -21,15 +21,41 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
   //AppStateBloc(AppState initialState) : super(initialState);
 
   Signaling _signaling = Signaling();
+  //muestra el video
+  RTCVideoRenderer _localRendered = RTCVideoRenderer();
+
+  RTCVideoRenderer get localRendered => _localRendered;
+
+/*   set localRendered(RTCVideoRenderer localRendered) {
+    _localRendered = localRendered;
+  } */
+
+  RTCVideoRenderer _remoteRendered = RTCVideoRenderer();
+  RTCVideoRenderer get remoteRendered => _remoteRendered;
+
+
+
+  
+
 
   //AppState get initialState => _init();
   
-  _init(){
+  _init() async{
+    await _localRendered.initialize();
+    await _remoteRendered.initialize();
     _signaling.initServer();
-    //_signaling.connectServer();
+
     _signaling.onlocalStreamVideoCall = (MediaStream streamVideoCall){
+      _localRendered.srcObject = streamVideoCall;
+      _localRendered.mirror = true;
+    };
+
+    _signaling.onRemoteStreamVideoCall = (MediaStream streamVideoCall){
+      _remoteRendered.srcObject = streamVideoCall;
+      _remoteRendered.mirror = true;
 
     };
+
     _signaling.onConnected = (Map<String,Hero>data) {
       if(data != null){
         //print("Connected ${jsonEncode(data)}");
@@ -61,15 +87,30 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
       print('respuesta desde app_state_bloc $answer');
       if (answer != null) {
         print('debo pasar a la pantalla de llamada');
+        add(InCallingEvent());
       }else{
         add(ConnectedEvent(state.heroSelected));
       }
+    };
+
+    _signaling.onRequest = (dynamic data){
+      add(InCommingEvent(data["superHeroName"]));
+    };
+
+    _signaling.onCancelRequest = (){
+      add(ConnectedEvent(state.heroSelected));
+    };
+
+    _signaling.onFinishCall= (){
+      add(ConnectedEvent(state.heroSelected));
     };
   }
 
 
   @override
   Future<void> close() {
+    _localRendered.dispose();
+    _remoteRendered.dispose();
     _signaling.dispose();
     return super.close();
   }
@@ -108,6 +149,27 @@ class AppStateBloc extends Bloc<AppStateEvent, AppState>{
       print('CallingEvent $event');
       _signaling.callTo(event.personGoingToCall.name);
       yield state.copyWith(status: Status.calling, personGoingToCall: event.personGoingToCall);
+    } else if (event is InCallingEvent){
+      yield state.copyWith(status: Status.incalling);
+    }else if (event is InCommingEvent){
+      final nameCallInput = state.heroes[event.nameCallInput];
+      print("InCommingEventtttttttttttt $nameCallInput");
+      yield state.copyWith(status: Status.incomming, heroSelected: nameCallInput);
+    }else if (event is AcceptOrDeclineCallEvent)  {
+      if (event.accept) {
+        await _signaling.acceptOrDeclineCall(true);
+        yield state.copyWith(status: Status.incalling);
+        print('pasar a la pantalla de llamada en curso');
+      }else {
+        _signaling.acceptOrDeclineCall(false);
+        yield state.copyWith(status: Status.connected, personGoingToCall: null);
+      }
+    }else if(event is CancelRequestEvent){
+      _signaling.cancelRequest();
+      yield state.copyWith(status: Status.connected, personGoingToCall: null);
+    } else if( event is FinishCallEvent){
+      _signaling.finishCurrentCall();
+      yield state.copyWith(status: Status.connected, personGoingToCall: null);
     }
 
   }

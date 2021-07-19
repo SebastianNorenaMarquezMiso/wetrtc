@@ -3,6 +3,8 @@ import 'package:app_webrtc/blocs/app_state_bloc.dart';
 import 'package:app_webrtc/blocs/app_state_events.dart';
 import 'package:app_webrtc/widgets/calling.dart';
 import 'package:app_webrtc/widgets/connected.dart';
+import 'package:app_webrtc/widgets/in_calling.dart';
+import 'package:app_webrtc/widgets/incomming.dart';
 import 'package:app_webrtc/widgets/show_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +33,10 @@ class HomeApp extends StatelessWidget {
                 return Connected();
               case Status.calling:
                 return Calling();
+              case Status.incalling:
+                return InCalling();
+              case Status.incomming:
+                return Incomming();
               default:
                 return Container();
             }

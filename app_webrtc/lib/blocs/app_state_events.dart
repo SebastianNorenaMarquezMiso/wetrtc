@@ -59,3 +59,32 @@ class CallingEvent extends AppStateEvent{
   final Hero personGoingToCall;
   CallingEvent(this.personGoingToCall): super([personGoingToCall]);
 }
+
+/**
+ * Evento que permite enlazar una llamada
+ */
+class InCallingEvent extends AppStateEvent {}
+
+/**
+ * Evento para escuchar una llamada entrante
+ */
+class InCommingEvent extends AppStateEvent {
+  //Nombre de la persona que está llamando
+  final String nameCallInput;
+  InCommingEvent(this.nameCallInput): super([nameCallInput]);
+}
+
+/**
+ * Nos sirve para aceptar o rechazar una llamada entrante
+ */
+class AcceptOrDeclineCallEvent extends AppStateEvent{
+  final bool accept;
+  AcceptOrDeclineCallEvent(this.accept): super([accept]);
+}
+
+class CancelRequestEvent extends AppStateEvent{ }
+
+class FinishCallEvent extends AppStateEvent{ }
+
+
+

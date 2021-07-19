@@ -1,5 +1,7 @@
 
 
+import 'dart:convert';
+
 import 'package:app_webrtc/models/hero.dart';
 import 'package:flutter_webrtc/webrtc.dart';
 import 'package:flutter_webrtc/media_stream.dart';
@@ -23,6 +25,10 @@ typedef OnTaken(String heroName);
 typedef OnDisconnected(String heroNameDisconnected);
 typedef OnlocalStreamVideoCall(MediaStream streamVideoCall);
 typedef OnResponse(dynamic answer);
+typedef OnRequest(dynamic data);
+typedef OnCancelRequest();
+typedef OnFinishCall();
+typedef OnRemoteStreamVideoCall(MediaStream streamVideoCall);
 
 class Signaling{
 
@@ -48,8 +54,15 @@ class Signaling{
    late OnlocalStreamVideoCall onlocalStreamVideoCall;
    late MediaStream _onlocalStreamVideoCall;
    //guarda el nombre de la otra persona del otro lado de la llamada
-   late String _person2;
+   //requestId: es el id que genera la llamada
+   //_incomming: es la oferta que envío
+   late String _person2, _requestId;
    late OnResponse onResponse;
+   late OnRequest onRequest;
+   late OnCancelRequest onCancelRequest;
+   late RTCSessionDescription _inCommingOffer;
+   late OnFinishCall onFinishCall;
+   late OnRemoteStreamVideoCall onRemoteStreamVideoCall;
 
 
 
@@ -69,7 +82,7 @@ class Signaling{
 
     _localStream= stream;
     onlocalStream(stream);
-    //_connect();
+    _connect();
 
     
   }
@@ -93,7 +106,6 @@ class Signaling{
       .setExtraHeaders({'foo': 'bar'}) // optional
       .build());
 
-      print('por aquí pasé');
       _socket.on("on-connected", (data) {
         final tmp = Map.from(data);
          print('temporal $tmp');
@@ -130,14 +142,52 @@ class Signaling{
        * Si la solicitud de llamada dura más de 10 segundos,
        * la respuesta será null y se cuelga la llamada
        */
-      _socket.on('on-response', (answer) {
+      _socket.on('on-response', (answer) async {
         print("respuesta de la llamada ${answer}");
         if (answer == null) {
-          _person2 = "";
-          _peerConnection.close();
-          //_peerConnection = null;
+          _finishCall();
+        }else{
+          RTCSessionDescription anserTmp = RTCSessionDescription(answer['sdp'], answer['type']);
+          await _peerConnection.setRemoteDescription(anserTmp);
         }
         onResponse(answer);
+      });
+
+      /**
+       * Evento para escuchar una llamada entrante
+       */
+      _socket.on('on-request', (data) async {
+        _person2 = data['superHeroName'];
+        _requestId = data['requestId'];
+        final tmp = data['offer'];
+        _inCommingOffer = RTCSessionDescription(tmp['sdp'], tmp['type']);
+        onRequest(data);
+      });
+
+    /**Escucha cuando la persona que llamó cuelga */
+      _socket.on('on-cancel-request', (_) async {
+        _finishCall();
+        onCancelRequest();
+      });
+
+//Escucho los iceCandidate de la persona del otro lado de la llamada(Información)
+      _socket.on('on-candidate', (data) async {
+        print("on-candidate---- $data");
+        if (_peerConnection != null) {
+          final iceCandidate = RTCIceCandidate( data["candidate"], data["sdpMid"], data["sdpMLineIndex"]);
+          //agrego el iceCandidate de la otra persona para establecer la conexión
+          await _peerConnection.addCandidate(iceCandidate);
+        }else print("No se enviaron los iceCandidate");
+      });
+
+//con _ le decimos que no recibe ningún parámetro
+//cuando en plena videollamada una de las dos personas 
+//se desconecta por alguna razón, finalizamos la llamada. 
+
+      _socket.on('on-finish-call', (_){
+        _finishCall();
+        print('Se colgó la llamada');
+        onFinishCall();
       });
 
   }
@@ -147,11 +197,32 @@ class Signaling{
   }
 
   Future<void> _createPeerServer() async{
-    this._peerConnection =  await createPeerConnection(WebRTCConfig.configuration, {});
+    _peerConnection =  await createPeerConnection(WebRTCConfig.configuration, {});
     _peerConnection.addStream(this._onlocalStreamVideoCall);
-    //Se ejecuta cuando obtengo el video de la otra persona que está al otro lado de la llamada
-    _peerConnection.onAddStream = (MediaStream streamVideoCall){
 
+    //Escuchamos nuestro iceCandidate
+    _peerConnection.onIceCandidate = (RTCIceCandidate iceCandidate){
+      print('estos son mis iceCandidateeeeeeee $iceCandidate');
+      if (iceCandidate != null) {
+        print("enviando mis icecandidate");
+        //debo saber si hay otra persona del otro lado de la llamada
+        if (_person2 != '' || _person2 != null) {
+          //enviamos nuestro iceCandidate al otro lado de la llamada
+          emitServer('candidate', {"him":_person2,"candidate": iceCandidate.toMap()});
+          /**
+          emitServer('candidate', {
+            "him":_person2,
+            "candidate": { "candidate": iceCandidate.toMap()}
+          });
+           */
+        }
+      }
+    };
+
+    //Se ejecuta cuando obtengo el video de la otra persona que está al otro lado de la llamada
+    this._peerConnection.onAddStream = (MediaStream streamVideoCall){
+      print("Listos para el streaming $streamVideoCall");
+      onRemoteStreamVideoCall(streamVideoCall);
     };
   }
 
@@ -159,14 +230,62 @@ class Signaling{
    * Guardamos el nombre de la otra persona que se va a llamar
    */
   callTo(String nameCall) async{
-    _usuario2 = nameCall;
+    //_usuario2 = nameCall;
+    _person2 = nameCall;
     await _createPeerServer();
     final RTCSessionDescription offerNameCall = await _peerConnection.createOffer(WebRTCConfig.offerSdpConstraints);
     await _peerConnection.setLocalDescription(offerNameCall);
-    emit('request', {"superHeroName": nameCall, "offer": offerNameCall.toMap()});
-
-
+    emitServer('request', {"superHeroName": nameCall, "offer": offerNameCall.toMap()});
   }
+
+ /**
+  * Funciona para aceptar una llamada entrante
+  */
+  acceptOrDeclineCall(bool accept)async{
+    if (accept) {
+      await _createPeerServer();
+      // registro la información de la persona que está llamando
+      //cuando la acepto (offer)
+      await _peerConnection.setRemoteDescription(_inCommingOffer);
+      final RTCSessionDescription myAnswer = await _peerConnection.createAnswer(WebRTCConfig.offerSdpConstraints);
+      //registro mi respuesta
+      _peerConnection.setLocalDescription(myAnswer);
+      emitServer('response', {
+        "requestId": _requestId,
+        "answer": myAnswer.toMap()
+      });
+    }else{
+      emitServer('response', {'requestId': _requestId, 'answer': null});
+      _finishCall();
+    }
+  }
+
+/**
+ * Nos sirve para colgar mientras estamos marcando(rechazar llamada saliente)
+ */
+  cancelRequest(){
+    _socket.emit('cancel-request');
+    _finishCall();
+  }
+
+  _finishCall(){
+    //_peerConnection = '' as RTCPeerConnection;
+    _person2 = "";
+    _peerConnection.close();
+    _requestId = "";
+  }
+
+//finaliza la llamada actual
+  finishCurrentCall(){
+    _finishCall();
+    _socket.emit('finish-call');
+  }
+
+
+
+
+
+
 
 
 

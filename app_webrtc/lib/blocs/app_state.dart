@@ -1,8 +1,8 @@
 import 'package:app_webrtc/models/hero.dart';
 import 'package:equatable/equatable.dart';
 
-//estados: cargando, mostrar perfiles y conectado
-enum Status{ loading,showPicker,connected, calling }
+//estados: cargando, mostrar perfiles y conectado, llamando, llamada en curso, llamada entrante
+enum Status{ loading,showPicker,connected, calling, incalling, incomming }
 class AppState extends Equatable{
   final Status status;
   final Map<String, Hero> heroes;
